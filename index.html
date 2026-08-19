@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Servos - Arduino</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      width: 340px;
+      text-align: center;
+    }
+    button {
+      background-color: #007acc;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 25px;
+      font-weight: bold;
+    }
+    button:hover { background-color: #005999; }
+    .slider-container {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Controle de Servos</h2>
+  <button id="btnConnect">Conectar ao Arduino</button>
+
+  <div class="slider-container">
+    <label for="servo1">Servo 1: <strong id="angle1">90</strong>°</label>
+    <input type="range" id="servo1" min="0" max="180" value="90" disabled>
+  </div>
+
+  <div class="slider-container">
+    <label for="servo2">Servo 2: <strong id="angle2">90</strong>°</label>
+    <input type="range" id="servo2" min="0" max="180" value="90" disabled>
+  </div>
+</div>
+
+<script>
+  let port;
+  let writer;
+
+  const btnConnect = document.getElementById('btnConnect');
+  const slider1 = document.getElementById('servo1');
+  const slider2 = document.getElementById('servo2');
+  const angle1 = document.getElementById('angle1');
+  const angle2 = document.getElementById('angle2');
+
+  btnConnect.addEventListener('click', async () => {
+    try {
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      
+      const encoder = new TextEncoderStream();
+      encoder.readable.pipeTo(port.writable);
+      writer = encoder.writable.getWriter();
+
+      btnConnect.innerText = "Conectado";
+      btnConnect.style.backgroundColor = "#28a745";
+      slider1.disabled = false;
+      slider2.disabled = false;
+    } catch (err) {
+      alert("Erro ao conectar: " + err);
+    }
+  });
+
+  async function sendCommand(servoId, angle) {
+    if (writer) {
+      // Envia no formato "ID:ANGULO\n", ex: "1:90\n"
+      await writer.write(`${servoId}:${angle}\n`);
+    }
+  }
+
+  slider1.addEventListener('input', (e) => {
+    angle1.innerText = e.target.value;
+    sendCommand(1, e.target.value);
+  });
+
+  slider2.addEventListener('input', (e) => {
+    angle2.innerText = e.target.value;
+    sendCommand(2, e.target.value);
+  });
+</script>
+</body>
+</html>
